@@ -4,7 +4,6 @@
     <Nullable>enable</Nullable>
     <!-- copy the Windows-specific implementation to net461 folder so that restore without a RID works -->
     <PackageTargetFramework Condition="'$(TargetsNetStandard)' == 'true' and '$(TargetsWindows)' == 'true'">netstandard2.0;net461</PackageTargetFramework>
-    <DefineConstants Condition="'$(TargetGroup)'!='netcoreapp'">$(DefineConstants);INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
     <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp2.0-Windows_NT-Debug;netcoreapp2.0-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard2.0-Windows_NT-Debug;netstandard2.0-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
@@ -29,25 +28,22 @@
     <Compile Include="System\Text\ISCIIEncoding.cs" />
     <Compile Include="System\Text\SBCSCodePageEncoding.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'!='netcoreapp'">
-    <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
-  </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="System\Text\CodePagesEncodingProvider.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Interop.BOOL.cs">
-      <Link>Common\CoreLib\Interop\Windows\Interop.BOOL.cs</Link>
+    <Compile Include="$(CoreLibDir)Interop\Windows\Interop.BOOL.cs">
+      <Link>Interop\Windows\Interop.BOOL.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetCPInfoEx.cs">
       <Link>Common\Interop\Windows\Interop.GetCPInfoEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.MAX_PATH.cs">
-      <Link>Common\CoreLib\Interop\Windows\Interop.MAX_PATH.cs</Link>
+    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.MAX_PATH.cs">
+      <Link>Interop\Windows\Interop.MAX_PATH.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs">
-      <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs</Link>
+    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs">
+      <Link>Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetStandard)' == 'true' and '$(TargetsWindows)' != 'true' ">

@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json
 {
@@ -203,9 +202,8 @@ namespace System.Text.Json
 
                 state.Current.TempEnumerableValues = converterList;
 
-                // Clear the value if present to ensure we don't confuse tempEnumerableValues with the collection.
-                if (!jsonPropertyInfo.IsPropertyPolicy &&
-                    !state.Current.JsonPropertyInfo.IsImmutableArray)
+                // Clear the value if present to ensure we don't confuse TempEnumerableValues with the collection.
+                if (!jsonPropertyInfo.IsPropertyPolicy && jsonPropertyInfo.CanBeNull)
                 {
                     jsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, null);
                 }
@@ -214,18 +212,13 @@ namespace System.Text.Json
             }
 
             JsonClassInfo runtimeClassInfo = jsonPropertyInfo.RuntimeClassInfo;
-            if (runtimeClassInfo.CreateObject != null)
+
+            if (runtimeClassInfo.CreateObject == null)
             {
-                return runtimeClassInfo.CreateObject();
+                ThrowHelper.ThrowNotSupportedException_DeserializeCreateObjectDelegateIsNull(jsonPropertyInfo.DeclaredPropertyType);
             }
-            else
-            {
-                // Could not create an instance to be returned. For derived types, this means there is no parameterless ctor.
-                throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(
-                    jsonPropertyInfo.DeclaredPropertyType,
-                    jsonPropertyInfo.ParentClassType,
-                    jsonPropertyInfo.PropertyInfo);
-            }
+
+            return runtimeClassInfo.CreateObject();
         }
 
         public static object CreateDictionaryValue(ref ReadStack state)
@@ -248,8 +241,8 @@ namespace System.Text.Json
 
                 state.Current.TempDictionaryValues = converterDictionary;
 
-                // Clear the value if present to ensure we don't confuse tempEnumerableValues with the collection.
-                if (!jsonPropertyInfo.IsPropertyPolicy)
+                // Clear the value if present to ensure we don't confuse TempDictionaryValues with the collection.
+                if (!jsonPropertyInfo.IsPropertyPolicy && jsonPropertyInfo.CanBeNull)
                 {
                     jsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, null);
                 }
@@ -258,18 +251,13 @@ namespace System.Text.Json
             }
 
             JsonClassInfo runtimeClassInfo = jsonPropertyInfo.RuntimeClassInfo;
-            if (runtimeClassInfo.CreateObject != null)
+
+            if (runtimeClassInfo.CreateObject == null)
             {
-                return runtimeClassInfo.CreateObject();
+                ThrowHelper.ThrowNotSupportedException_DeserializeCreateObjectDelegateIsNull(jsonPropertyInfo.DeclaredPropertyType);
             }
-            else
-            {
-                // Could not create an instance to be returned. For derived types, this means there is no parameterless ctor.
-                throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(
-                    jsonPropertyInfo.DeclaredPropertyType,
-                    jsonPropertyInfo.ParentClassType,
-                    jsonPropertyInfo.PropertyInfo);
-            }
+
+            return runtimeClassInfo.CreateObject();
         }
 
         public Type GetElementType()
@@ -303,11 +291,9 @@ namespace System.Text.Json
 
         public void DetermineEnumerablePopulationStrategy(object targetEnumerable)
         {
-            if (JsonPropertyInfo.ClassType != ClassType.Enumerable)
-            {
-                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(JsonPropertyInfo.RuntimePropertyType);
-            }
-            else if (JsonPropertyInfo.RuntimeClassInfo.AddItemToObject != null)
+            Debug.Assert(JsonPropertyInfo.ClassType == ClassType.Enumerable);
+
+            if (JsonPropertyInfo.RuntimeClassInfo.AddItemToObject != null)
             {
                 if (!JsonPropertyInfo.TryCreateEnumerableAddMethod(targetEnumerable, out object addMethodDelegate))
                 {
@@ -342,6 +328,8 @@ namespace System.Text.Json
 
         public void DetermineIfDictionaryCanBePopulated(object targetDictionary)
         {
+            Debug.Assert(JsonPropertyInfo.ClassType == ClassType.Dictionary);
+
             if (!JsonPropertyInfo.CanPopulateDictionary(targetDictionary))
             {
                 throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(

@@ -18,8 +18,6 @@ namespace System.IO
 {
     internal static partial class FileSystem
     {
-        internal const int GENERIC_READ = unchecked((int)0x80000000);
-
         public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
             int errorCode = Interop.Kernel32.CopyFile(sourceFullPath, destFullPath, !overwrite);
@@ -32,7 +30,7 @@ namespace System.IO
                 {
                     // For a number of error codes (sharing violation, path not found, etc) we don't know if the problem was with
                     // the source or dest file.  Try reading the source file.
-                    using (SafeFileHandle handle = Interop.Kernel32.CreateFile(sourceFullPath, GENERIC_READ, FileShare.Read, FileMode.Open, 0))
+                    using (SafeFileHandle handle = Interop.Kernel32.CreateFile(sourceFullPath, Interop.Kernel32.GenericOperations.GENERIC_READ, FileShare.Read, FileMode.Open, 0))
                     {
                         if (handle.IsInvalid)
                             fileName = sourceFullPath;
@@ -74,7 +72,7 @@ namespace System.IO
 
         public static FileAttributes GetAttributes(string fullPath)
         {
-            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
             int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
             if (errorCode != 0)
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
@@ -84,7 +82,7 @@ namespace System.IO
 
         public static DateTimeOffset GetCreationTime(string fullPath)
         {
-            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
             int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: false);
             if (errorCode != 0)
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
@@ -101,7 +99,7 @@ namespace System.IO
 
         public static DateTimeOffset GetLastAccessTime(string fullPath)
         {
-            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
             int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: false);
             if (errorCode != 0)
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
@@ -111,7 +109,7 @@ namespace System.IO
 
         public static DateTimeOffset GetLastWriteTime(string fullPath)
         {
-            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
             int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: false);
             if (errorCode != 0)
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
@@ -127,6 +125,9 @@ namespace System.IO
 
                 if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)
                     throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_PATH_NOT_FOUND, sourceFullPath);
+
+                if (errorCode == Interop.Errors.ERROR_ALREADY_EXISTS)
+                    throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_ALREADY_EXISTS, destFullPath);
 
                 // This check was originally put in for Win9x (unfortunately without special casing it to be for Win9x only). We can't change the NT codepath now for backcomp reasons.
                 if (errorCode == Interop.Errors.ERROR_ACCESS_DENIED) // WinNT throws IOException. This check is for Win9x. We can't change it for backcomp.
@@ -184,7 +185,7 @@ namespace System.IO
                 return;
             }
 
-            Interop.Kernel32.WIN32_FIND_DATA findData = new Interop.Kernel32.WIN32_FIND_DATA();
+            Interop.Kernel32.WIN32_FIND_DATA findData = default;
             GetFindData(fullPath, ref findData);
             if (IsNameSurrogateReparsePoint(ref findData))
             {
